@@ -1,0 +1,19 @@
+--extra-index-url https://download.pytorch.org/whl/cu121
+
+# CORE LIBRARIES
+torch==2.2.2
+torchvision==0.17.2
+torchaudio==2.2.2
+numpy<2.0.0
+Pillow<10.3.0
+
+# IMAGE PROCESSING & FACE DETECTION
+opencv-python
+facenet-pytorch
+
+# AI MODELS & EXPLAINABILITY (XAI)
+timm
+grad-cam
+
+# WEB INTERFACE
+streamlit

@@ -45,8 +45,14 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("Deepfake Detection (Self-Blended Images)")
-st.write("Upload an image containing a face. The AI will automatically crop it, evaluate the forgery score, and generate an explainability heatmap.")
+st.markdown("""
+<div style="text-align: center; margin-bottom: 2rem;">
+    <h1 style="background: -webkit-linear-gradient(45deg, #FF4B4B, #FF8C00); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0;">
+        Deepfake Detection Engine
+    </h1>
+    <p style="font-size: 1.2rem; color: #888; font-weight: 500;">Powered by Self-Blended Images (SBI) & EfficientNet</p>
+</div>
+""", unsafe_allow_html=True)
 
 # Wait for models to load before showing UI
 with st.spinner("Loading AI Models (takes a few seconds initially)..."):
@@ -58,20 +64,22 @@ if status != "Success":
 
 st.markdown("---")
 
-uploaded_files = st.file_uploader("Select images to check...", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
+st.markdown("### Upload Images for Analysis")
+st.caption("The AI will automatically extract the face, evaluate the forgery score, and generate an explainability heatmap.")
+uploaded_files = st.file_uploader("Select images to check...", type=["jpg", "jpeg", "png"], accept_multiple_files=True, label_visibility="collapsed")
 
 if uploaded_files:
     for uploaded_file in uploaded_files:
-        st.markdown(f"### Results for: `{uploaded_file.name}`")
+        st.markdown(f"<h3 style='color: #4CAF50; margin-top: 2rem;'>🔎 Analysis Report: <code>{uploaded_file.name}</code></h3>", unsafe_allow_html=True)
         
         # Read original image using PIL
         original_image = Image.open(uploaded_file).convert("RGB")
         
         # Add 2 spacer columns on the sides to squeeze the 3 main columns into the center
-        spacer_left, col1, col2, col3, spacer_right = st.columns([1, 2, 2, 2, 1])
+        spacer_left, col1, col2, col3, spacer_right = st.columns([0.5, 2.5, 2.5, 2.5, 0.5])
         
         with col1:
-            st.subheader("1. Original")
+            st.markdown("**1. Original**")
             st.image(original_image, width="stretch")
             
         with st.spinner(f"AI is analyzing {uploaded_file.name}..."):
@@ -79,10 +87,11 @@ if uploaded_files:
             face_img = detector.extract_face(original_image)
             
             if face_img is None:
-                st.warning("No face detected in the image. Please try a more frontal angle.")
+                with col1:
+                    st.warning("No face detected in the image. Please try a more frontal angle.")
             else:
                 with col2:
-                    st.subheader("2. Cropped Face")
+                    st.markdown("**2. Cropped Face**")
                     st.image(face_img, width="stretch")
                     
                 # Step 2: Predict
@@ -93,22 +102,36 @@ if uploaded_files:
                 heatmap_img = explainer.generate_heatmap(face_img, input_tensor)
                 
                 with col3:
-                    st.subheader("3. Explainability (Grad-CAM)")
+                    st.markdown("**3. Explainability (Grad-CAM)**")
                     if heatmap_img:
                         st.image(heatmap_img, width="stretch")
-                        st.caption("Red regions: Abnormal traces (manipulation). Blue regions: Normal.")
+                        st.caption(":red[Red]: Abnormal traces | :blue[Blue]: Normal")
 
                 st.markdown("---")
-                st.subheader("Evaluation Results")
+                
+                # Split evaluation into 2 columns for a better layout
+                res_col1, res_col2 = st.columns([3, 1])
                 
                 OPTIMAL_THRESHOLD = 0.78
                 
-                if fake_score >= OPTIMAL_THRESHOLD:
-                    st.error(f"DEEPFAKE DETECTED (Fake Score: {fake_score:.4f})")
-                else:
-                    st.success(f"AUTHENTIC. (Fake Score: {fake_score:.4f})")
+                with res_col1:
+                    st.subheader("Evaluation Results")
+                    if fake_score >= OPTIMAL_THRESHOLD:
+                        st.error(f"**DEEPFAKE DETECTED**")
+                        st.markdown(f"The AI found strong evidence of manipulation. *(Threshold: {OPTIMAL_THRESHOLD})*")
+                    else:
+                        st.success(f"**AUTHENTIC**")
+                        st.markdown(f"The AI did not find significant manipulation traces. *(Threshold: {OPTIMAL_THRESHOLD})*")
+                        
+                    st.progress(fake_score)
                     
-                st.progress(fake_score)
-                st.write(f"*Current evaluation threshold is set to: {OPTIMAL_THRESHOLD}*")
+                with res_col2:
+                    # Beautiful metric display
+                    st.metric(
+                        label="Forgery Confidence", 
+                        value=f"{fake_score * 100:.1f}%", 
+                        delta="Suspicious" if fake_score >= OPTIMAL_THRESHOLD else "Natural",
+                        delta_color="inverse"
+                    )
         
-        st.markdown("---")
+        st.markdown("<br><br>", unsafe_allow_html=True)

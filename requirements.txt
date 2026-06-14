@@ -15,5 +15,10 @@ facenet-pytorch
 timm
 grad-cam
 
-# WEB INTERFACE
+# WEB INTERFACE (Deprecated - Streamlit)
 streamlit
+
+# BACKEND API (FastAPI)
+fastapi
+uvicorn
+python-multipart
